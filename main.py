@@ -1,3 +1,52 @@
+<<<<<<< HEAD
+import sys
+
+from app.infrastructure.config import build_config, parse_args
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    config = build_config(args)
+
+    if config.visual_prompt.enabled:
+        print(
+            "Visual prompt requires a bbox provider for the reference image. "
+            "The architecture supports this mode, but CLI/UI bbox selection is a later step.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not config.model_path.exists():
+        print(f"Model file was not found: {config.model_path}", file=sys.stderr)
+        print("Place the weights at models/yoloe-26x-seg.pt or pass --model PATH.", file=sys.stderr)
+        return 1
+
+    try:
+        from app.adapters.renderers import OpenCVFrameRenderer
+        from app.adapters.sources import create_frame_source
+        from app.adapters.ultralytics_engine import UltralyticsYoloEEngine
+        from app.use_cases.fps import PerfCounterFpsMeter
+        from app.use_cases.run_inference_pipeline import RunInferencePipeline
+
+        inference_engine = UltralyticsYoloEEngine(config)
+        source = create_frame_source(config.source)
+        pipeline = RunInferencePipeline(
+            source=source,
+            inference_engine=inference_engine,
+            renderer=OpenCVFrameRenderer(config),
+            fps_meter=PerfCounterFpsMeter(),
+        )
+        return pipeline.run()
+    except ModuleNotFoundError as error:
+        print(
+            f"Missing runtime dependency: {error.name}. Install dependencies from requirements.txt.",
+            file=sys.stderr,
+        )
+        return 1
+    except (NotImplementedError, RuntimeError) as error:
+        print(str(error), file=sys.stderr)
+        return 1
+=======
 import argparse
 import sys
 from pathlib import Path
@@ -134,6 +183,7 @@ def main() -> int:
         cv2.destroyAllWindows()
 
     return 0
+>>>>>>> 6f1a509 (Update .gitignore to exclude 'models/' and 'uploads/' directories)
 
 
 if __name__ == "__main__":
